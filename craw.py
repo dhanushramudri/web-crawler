@@ -1,56 +1,36 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-import time
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
-# Replace with the path to your WebDriver executable (e.g., chromedriver.exe)
-driver_path = 'path/to/chromedriver'
+def get_all_urls(url):
+    try:
+        # Send a GET request to the URL
+        response = requests.get(url)
 
-# URL to navigate to
-url_to_search = "https://www.geeksforgeeks.org/"
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+            # Parse the HTML content
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-# Create Chrome options
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument(f"webdriver.chrome.driver={driver_path}")
+            # Extract all anchor tags (links)
+            links = soup.find_all('a', href=True)
 
-# Create a new instance of the Chrome driver with options
-driver = webdriver.Chrome(options=chrome_options)
+            # Extract and print the absolute URLs
+            total_urls = 0
+            for link in links:
+                absolute_url = urljoin(url, link['href'])
+                print(absolute_url)
+                total_urls += 1
 
-def highlight_and_scroll_to_word(driver, word):
-    # Highlight the word using JavaScript
-    script = f"var searchReg = new RegExp('{word}', 'ig');\
-              document.body.innerHTML = document.body.innerHTML.replace(searchReg, '<span style=\"background-color: yellow;\">$&</span>');"
-    driver.execute_script(script)
+            # Print the total count of URLs
+            print(f"Total URLs: {total_urls}")
 
-    # Find the first occurrence of the highlighted word
-    element = driver.find_element(By.XPATH, f"//*[contains(text(), '{word}')]")
+        else:
+            print(f"Failed to fetch HTML. Status code: {response.status_code}")
 
-    # Scroll to the element using JavaScript
-    driver.execute_script("arguments[0].scrollIntoView({ behavior: 'smooth', block: 'center' });", element)
+    except Exception as e:
+        print(f"Error: {e}")
 
-try:
-    # Navigate to the URL
-    driver.get(url_to_search)
-
-    # Wait for the page to load (adjust the sleep duration if needed)
-    time.sleep(5)
-
-    # Print the HTML content
-    html_content = driver.page_source
-    # print(html_content)
-
-    # Word to search for
-    search_word = "Duplicate"
-
-    # Highlight and scroll to the word
-    highlight_and_scroll_to_word(driver, search_word)
-
-    # Wait for a few seconds to view the highlighted word
-    time.sleep(20)  # Adjust the sleep duration as needed
-
-finally:
-    # Comment out or remove the following line to keep the browser open
-    driver.quit()
+# Replace the URL with the one you want to scrape
+url_to_scrape = "https://www.geeksforgeeks.org/"
+get_all_urls(url_to_scrape)
